@@ -3,7 +3,7 @@
 ### ⏳ Installation
 
 Install project dependencies:
-- (Use **yarn** to install the Strapi project (recommended). [Install yarn with these docs](https://yarnpkg.com/lang/en/docs/install/).)
+- (Use **yarn** to install the project (recommended). [Install yarn with these docs](https://yarnpkg.com/lang/en/docs/install/).)
 
 ```bash
 yarn
