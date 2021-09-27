@@ -1,5 +1,4 @@
 const chromium = require('chrome-aws-lambda');
-const axios = require('axios');
 
 export default async function(req, res) {
   let browser = null
@@ -39,17 +38,25 @@ export default async function(req, res) {
       await page.setDefaultNavigationTimeout(0);
       await page.goto(url)
       await page.waitForSelector('body')
+
       
-      const offer = await page.evaluate(() => ({
-        title: document.querySelector('h1').innerText,
-        date: (document.querySelector('.Snj6Y') as HTMLElement).innerText,
-        price: parseFloat((document.querySelector('.Roh2X') as HTMLElement).innerText.replace(/ /g,'').replace('€', '')),
-        including_charges: (document.querySelector('.FUcqi') as HTMLElement).innerText === 'Charges comprises',
-        description: '',
-        type: "apartment",
-        surface: 42,
-        rooms: 2,
-      }))
+      const offer = await page.evaluate(() => {
+        const select = (selector) => {
+          const valueSelector: HTMLElement = document.querySelector(selector)
+          return valueSelector.innerText
+        }
+
+        return {
+          title: select('h1'),
+          date: select('.Snj6Y'),
+          price: parseFloat(select('.Roh2X').replace('€', '').replace(/\s/g, "")),
+          including_charges: select('.FUcqi') === 'Charges comprises',
+          description: select('._2BMZF'),
+          type: select('[data-qa-id="criteria_item_real_estate_type"] span'),
+          surface: parseFloat(select('[data-qa-id="criteria_item_square"] span').replace(/\D/g,'')),
+          rooms: parseFloat(select('[data-qa-id="criteria_item_rooms"] span').replace(/\D/g,'')),
+        }
+      })
       return offer
     }
     
