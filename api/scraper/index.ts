@@ -3,6 +3,8 @@ const chromium = require('chrome-aws-lambda');
 export default async function(req, res) {
   let browser = null
   const { query } = req
+  const limit = query.limit || 35
+  const pageCount = 35
 
   try {
     browser = await chromium.puppeteer.launch({
@@ -18,18 +20,23 @@ export default async function(req, res) {
       await page.goto('https://www.leboncoin.fr/recherche?category=10&locations=Paris__48.85790600716752_2.358844068809977_10000&real_estate_type=2');
       await page.waitForNavigation({ waitUntil: 'networkidle2' });
 
-      const result = await page.evaluate(() => {
-        const offers = Array.from(document.querySelectorAll('.styles_adCard__2YFTi'));
-
-        return offers.map(offer => {
-          const linkSelector = offer.querySelector('a')
+      const links = await Promise.all([...Array(Math.ceil(limit / pageCount))].map(async (p, index) => {
+        const pageLinks = await page.evaluate(() => {
+          const offers = Array.from(document.querySelectorAll('.styles_adCard__2YFTi'));
   
-          return {
-            url: linkSelector.href
-          }
+          return offers.map(offer => {
+            const linkSelector = offer.querySelector('a')
+    
+            return {
+              url: linkSelector.href
+            }
+          })
         })
-      })
-      return result
+        await page.click(`a[title="Page ${index + 2}"]`)
+        return pageLinks
+      }))
+
+      return links.flat()
     }
 
 
@@ -61,7 +68,7 @@ export default async function(req, res) {
     }
     
     const links = await getAllLinks(browser);
-    const offers = await Promise.all(links.slice(0, 5).map(async link => {
+    const offers = await Promise.all(links.slice(0, limit).map(async link => {
       const offer = await getDataFromUrl(browser, link.url);
       return offer
     }))
